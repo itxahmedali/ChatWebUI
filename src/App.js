@@ -43,12 +43,18 @@ function App() {
       const msg = JSON.parse(message);
       console.log(msg);
       // if (msg.from_id == loginId) {
-        // setNotification(msg.message)
+      // setNotification(msg.message)
       // }
       if (loginId != null) {
-      setMessageList(oldValue => [...oldValue, msg]);
+        setMessageList(oldValue => [...oldValue, msg]);
       }
     });
+    users?.map((e,i) => {
+      if(i == loginId){
+        setuserName(e.name)
+        console.log(e);
+      }
+    })
   }, [loginId]);
   function sendMessage() {
     let time = new Date().getTime();
@@ -106,6 +112,7 @@ function App() {
     // }
   }
   const [profileName, setprofileName] = useState(null)
+  const [userName, setuserName] = useState(null)
   const UserButton = users?.map((e, i) => {
     return (
       loginId != i ?
@@ -131,11 +138,21 @@ function App() {
               <p>{moment(e?.timestamp).format('hh:mm A')}</p>
             </div>
           </div>
+          <div className='profile d-flex align-items-center widthFit'>
+            <div className='profileImg d-flex justify-content-center align-items-center'>
+              <p>{userName?.substring(0, 1)}</p>
+            </div>
+          </div>
         </div>
         : e.to_id == loginId &&
           e.from_id == toId &&
           e.to_id != toId ?
-          <div key={i} className='row'>
+          <div key={i} className='row d-flex'>
+            <div className='profile d-flex align-items-center widthFit'>
+              <div className='profileImg d-flex justify-content-center align-items-center'>
+                <p>{profileName?.substring(0, 1)}</p>
+              </div>
+            </div>
             <div className='sender'>
               <p>{e.message}</p>
               <div className='time'>
@@ -146,7 +163,7 @@ function App() {
           : null
     )
   })
-  const searchUsers = users?.splice(0,3)?.map((e, i) => {
+  const searchUsers = users?.splice(0, 3)?.map((e, i) => {
     return (
       loginId != i ?
         <button key={i} className='btn' onClick={() => { setprofileName(e.name); setToId(i) }}>
@@ -186,8 +203,9 @@ function App() {
                 </div>
                 <div className='footer'>
                   <div className='position-relative'>
-                  <textarea rows={1} placeholder='Type messge' id='messageInput' onChange={e => setMessage(e.target.value)}></textarea>
-                  <button className='sendButton' onClick={() => sendMessage()}>Send</button>
+                    <textarea rows={1} placeholder='Type messge' id='messageInput' onChange={e => setMessage(e.target.value)}></textarea>
+                    <button className='sendButton' onClick={() => sendMessage()}><i className='fa fa-paper-plane'></i>
+                    </button>
                   </div>
                 </div>
               </>

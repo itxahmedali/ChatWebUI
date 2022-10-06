@@ -100,3 +100,9 @@ padding:1rem 4rem 1rem 1rem;
     height: 90%;
     padding: 0 1rem;
 }
+.widthFit{
+  width: fit-content !important;
+}
+.widthFit .profileImg{
+  margin-right: 0;
+}
