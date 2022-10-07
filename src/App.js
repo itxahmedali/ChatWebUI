@@ -1,14 +1,11 @@
-import logo from './logo.svg';
 import './App.css';
-import { Button, Container, Row, Col } from 'react-bootstrap';
 import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
 import '../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js';
 import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
 import axios from 'axios';
 import moment from 'moment/moment';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-
+import Select from 'react-select';
 function App() {
   const users = [
     {
@@ -33,15 +30,20 @@ function App() {
   const [socket, setSocket] = useState(
     io('https://monily-web-chat-server.herokuapp.com'),
   );
-  const [loginId, setloginId] = useState(null);
+  const [loginId, setloginId] = useState(1);
   const [message, setMessage] = useState(null);
+  const [messageEdit, setmessageEdit] = useState(false);
   const [search, setSearch] = useState(null);
-  const [toId, setToId] = useState(null)
+  const [searchUser, setSearchUser] = useState([]);
+  const [token, settoken] = useState('c4ca4238a0b923820dcc509a6f75849b');
+  const [toId, setToId] = useState(9)
+  const [miniLoader, setminiLoader] = useState(false)
   const [messageList, setMessageList] = useState([]);
+  const [recentUser, setRecentUsers] = useState([]);
+
   useEffect(() => {
     socket.on('message', message => {
       const msg = JSON.parse(message);
-      console.log(msg);
       // if (msg.from_id == loginId) {
       // setNotification(msg.message)
       // }
@@ -49,8 +51,8 @@ function App() {
         setMessageList(oldValue => [...oldValue, msg]);
       }
     });
-    users?.map((e,i) => {
-      if(i == loginId){
+    users?.map((e, i) => {
+      if (i == loginId) {
         setuserName(e.name)
         console.log(e);
       }
@@ -58,20 +60,40 @@ function App() {
   }, [loginId]);
   function sendMessage() {
     let time = new Date().getTime();
-    // if (messageEdit == false) {
-    if (message == '' || message == null) {
-      return;
+    if (messageEdit == false) {
+      if (message == '' || message == null) {
+        return;
+      } else {
+        socket.emit('message', {
+          message: message,
+          to_id: toId,
+          from_id: loginId,
+          timestamp: time,
+        });
+        document.getElementById('messageInput').value = ''
+        axios
+          .post(
+            // `https://monilyapp.yourhealthgrades.com/api/chat/sendMessage?to_id=${toId}&from_id=${loginId}&message=${message}&timestamp=${time}`,
+            `https://monilyapp.yourhealthgrades.com/api/chat/sendMessage?to_id=${toId}&from_id=${loginId}&message=${message}&timestamp=${time}`,
+            {},
+            {
+              headers: {
+                Accept: 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          )
+          .then(res => {
+          })
+          .catch(e => {
+            console.log(e);
+          });
+      }
     } else {
-      socket.emit('message', {
-        message: message,
-        to_id: toId,
-        from_id: loginId,
-        timestamp: time,
-      });
-      document.getElementById('messageInput').value = ''
+      // console.log(deleteId, message);
       // axios
       //   .post(
-      //     `https://monilyapp.yourhealthgrades.com/api/chat/sendMessage?to_id=${toId}&from_id=${loginId}&message=${message}&timestamp=${time}`,
+      //     `https://monilyapp.yourhealthgrades.com/api/chat/updateMessage?id=${deleteId}&message=${message}`,
       //     {},
       //     {
       //       headers: {
@@ -81,51 +103,56 @@ function App() {
       //     },
       //   )
       //   .then(res => {
-      //     setMessage('');
       //     getMessages();
+      //     setMessage('');
+      //     setmessageEdit(false);
       //   })
-      //   .catch(e => {
-      //     console.log(e);
+      //   .catch(err => {
+      //     console.log(err);
       //   });
     }
-    // } else {
-    // console.log(deleteId, message);
-    // axios
-    //   .post(
-    //     `https://monilyapp.yourhealthgrades.com/api/chat/updateMessage?id=${deleteId}&message=${message}`,
-    //     {},
-    //     {
-    //       headers: {
-    //         Accept: 'application/json',
-    //         Authorization: `Bearer ${token}`,
-    //       },
-    //     },
-    //   )
-    //   .then(res => {
-    //     getMessages();
-    //     setMessage('');
-    //     setmessageEdit(false);
-    //   })
-    //   .catch(err => {
-    //     console.log(err);
-    //   });
-    // }
   }
   const [profileName, setprofileName] = useState(null)
   const [userName, setuserName] = useState(null)
-  const UserButton = users?.map((e, i) => {
+  const UserButton = recentUser?.map((e, i) => {
+    console.log(e);
     return (
-      loginId != i ?
-        <button key={i} className='btn' onClick={() => { setprofileName(e.name); setToId(i) }}>
+      // loginId != i ?
+        <button key={i} className='btn' onClick={() => { getChat(e) }}>
+        {/* <button key={i} className='btn' onClick={() => { setprofileName(e.name); setToId(i) }}> */}
           <div className='profile d-flex align-items-center'>
             <div className='profileImg d-flex justify-content-center align-items-center'>
-              <p>{e.name.substring(0, 1)}</p>
+              <p>{e.to_name.substring(0, 1)}</p>
             </div>
-            <p>{e.name}</p>
+            <p>{e.to_name}</p>
           </div>
-        </button> : null
+        </button> 
+        // : null
     )
   })
+  const getChat = e => {
+    setprofileName(e);
+    console.log(e);
+    axios
+      .get(
+        `https://monilyapp.yourhealthgrades.com/api/chat/getChat?to_id=${ e?.hasOwnProperty("to_id") ? e?.to_id : e?.id}&from_id=${loginId}`,
+        {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+      .then(res => {
+        console.log(res);
+        setMessageList(res.data.data.data);
+        // setLoading(false)
+      })
+      .catch(e => {
+        console.log(e, 'chatData');
+        // setLoading(false)
+      });
+  }
   const messages = messageList?.map((e, i) => {
     return (
       (e.to_id == toId &&
@@ -163,27 +190,109 @@ function App() {
           : null
     )
   })
-  const searchUsers = users?.splice(0, 3)?.map((e, i) => {
-    return (
-      loginId != i ?
-        <button key={i} className='btn' onClick={() => { setprofileName(e.name); setToId(i) }}>
-          <div className='profile d-flex align-items-center'>
-            <div className='profileImg d-flex justify-content-center align-items-center'>
-              <p>{e.name.substring(0, 1)}</p>
-            </div>
-            <p>{e.name}</p>
-          </div>
-        </button> : null
-    )
-  })
+  useEffect(() => {
+    if (search == null || search == '') {
+      setminiLoader(false)
+      return
+    }
+    else {
+      setminiLoader(true)
+    }
+    const delayDebounceFn = setTimeout(() => {
+      // Send Axios request here
+      if (search == null || search == '') {
+        return
+      }
+      else {
+        searchApi(search)
+      }
+    }, 3000)
+
+    return () => clearTimeout(delayDebounceFn)
+  }, [search])
+  useEffect(() => {
+    axios
+          .get(
+            `https://monilyapp.yourhealthgrades.com/api/chat/getChatList?user_id=${loginId}`,{
+              headers: {
+                'Content-Type': 'multipart/form-data',
+                Accept: 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          )
+          .then(res => {
+            console.log(res?.data);
+            let users = [];
+            res?.data?.data.map(res => {
+              if(res?.from_id == loginId ){
+                users.push(res);
+              }
+            });
+            setRecentUsers(users);
+          })
+          .catch(err => {
+            console.log(err);
+          });
+  }, [loginId])
+  
+  const searchApi = (e) => {
+    axios
+      .get(
+        `https://monilyapp.yourhealthgrades.com/api/chat/getUsers?keyword=${e}`, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      }
+      )
+      .then(res => {
+        let arr = []
+        res?.data?.data.map(e => {
+          if (e?.id != loginId) {
+            arr.push({
+              label: e.name,
+              value: e.name,
+              id: e.id,
+              email: e.email
+            })
+            setminiLoader(false)
+            //   setsearchedUser([res?.data?.data]);
+            //   if (res?.data?.data?.length > 0) {
+            //     setdropDownOpen(true);
+            //   } else {
+            //     setdropDownOpen(false);
+            //   }
+            // } else {
+            //   return;
+          }
+        });
+        setSearchUser(arr)
+      })
+      .catch(err => {
+        setminiLoader(false)
+        console.log(err);
+      });
+    // console.log(e);
+  }
   return (
     <div className='container'>
       <div className='row'>
         <div className='col-lg-2'>
-          {/* <input placeholder='Search User' className='w-90 SearchInput' onChange={e=> setSearch(e.target.value)}/> */}
-          {/* <div className='SearchBox'>
-          {search != null ? searchUsers : null}
-          </div> */}
+          <div className='position-relative'>
+            <Select
+              options={searchUser}
+              onChange = {e => {getChat(e)}}
+              placeholder="Search user"
+              onInputChange={e => { setSearch(e) }}
+            />
+            {
+              miniLoader ?
+                <div className='loading'>
+                </div> : null
+            }
+          </div>
           {UserButton}
         </div>
         <div className='col-lg-10 position-relative'>
@@ -193,9 +302,9 @@ function App() {
                 <div className='header'>
                   <div className='profile d-flex align-items-center'>
                     <div className='profileImg d-flex justify-content-center align-items-center'>
-                      <p>{profileName?.substring(0, 1)}</p>
+                      <p>{profileName?.hasOwnProperty('to_name') ? profileName?.to_name?.substring(0, 1) : profileName?.label?.substring(0, 1)}</p>
                     </div>
-                    <p>{profileName}</p>
+                    <p>{profileName?.hasOwnProperty('to_name') ? profileName?.to_name : profileName?.label}</p>
                   </div>
                 </div>
                 <div className='body'>

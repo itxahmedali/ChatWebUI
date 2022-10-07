@@ -106,3 +106,16 @@ padding:1rem 4rem 1rem 1rem;
 .widthFit .profileImg{
   margin-right: 0;
 }
+.loading {    
+  background-image: url("./assets/loader.gif");
+  width: 30px;
+  height: 30px;
+  background-size: contain;
+  position: absolute;
+  top: 5px;
+  right: 40px;
+}
+.css-1s2u09g-control {
+  border-color: hsl(0deg 0% 80% / 56%) !important;
+  border-radius: 35px !important;
+}
