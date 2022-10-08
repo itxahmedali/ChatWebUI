@@ -115,27 +115,25 @@ function App() {
   const [profileName, setprofileName] = useState(null)
   const [userName, setuserName] = useState(null)
   const UserButton = recentUser?.map((e, i) => {
-    console.log(e);
     return (
       // loginId != i ?
-        <button key={i} className='btn' onClick={() => { getChat(e) }}>
+      <button key={i} className='btn' onClick={() => { getChat(e) }}>
         {/* <button key={i} className='btn' onClick={() => { setprofileName(e.name); setToId(i) }}> */}
-          <div className='profile d-flex align-items-center'>
-            <div className='profileImg d-flex justify-content-center align-items-center'>
-              <p>{e.to_name.substring(0, 1)}</p>
-            </div>
-            <p>{e.to_name}</p>
+        <div className='profile d-flex align-items-center'>
+          <div className='profileImg d-flex justify-content-center align-items-center'>
+            <p>{e.to_name.substring(0, 1)}</p>
           </div>
-        </button> 
-        // : null
+          <p>{e?.from_id == loginId ? e?.to_name : e?.from_name}</p>
+        </div>
+      </button>
+      // : null
     )
   })
   const getChat = e => {
     setprofileName(e);
-    console.log(e);
     axios
       .get(
-        `https://monilyapp.yourhealthgrades.com/api/chat/getChat?to_id=${ e?.hasOwnProperty("to_id") ? e?.to_id : e?.id}&from_id=${loginId}`,
+        `https://monilyapp.yourhealthgrades.com/api/chat/getChat?to_id=${e?.hasOwnProperty("to_id") ? e?.to_id : e?.id}&from_id=${loginId}`,
         {
           headers: {
             Accept: 'application/json',
@@ -212,30 +210,33 @@ function App() {
   }, [search])
   useEffect(() => {
     axios
-          .get(
-            `https://monilyapp.yourhealthgrades.com/api/chat/getChatList?user_id=${loginId}`,{
-              headers: {
-                'Content-Type': 'multipart/form-data',
-                Accept: 'application/json',
-                Authorization: `Bearer ${token}`,
-              },
-            },
-          )
-          .then(res => {
-            console.log(res?.data);
-            let users = [];
-            res?.data?.data.map(res => {
-              if(res?.from_id == loginId ){
-                users.push(res);
-              }
-            });
-            setRecentUsers(users);
-          })
-          .catch(err => {
-            console.log(err);
-          });
+      .get(
+        `https://monilyapp.yourhealthgrades.com/api/chat/getChatList?user_id=${loginId}`, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      },
+      )
+      .then(res => {
+        console.log(res?.data);
+        let users = [];
+        res?.data?.data.map(res => {
+          if (res?.from_id == loginId && res?.to_id == loginId) {
+            return
+          }
+          else{
+            users.push(res);
+          }
+        });
+        setRecentUsers(users);
+      })
+      .catch(err => {
+        console.log(err);
+      });
   }, [loginId])
-  
+
   const searchApi = (e) => {
     axios
       .get(
@@ -283,7 +284,7 @@ function App() {
           <div className='position-relative'>
             <Select
               options={searchUser}
-              onChange = {e => {getChat(e)}}
+              onChange={e => { getChat(e) }}
               placeholder="Search user"
               onInputChange={e => { setSearch(e) }}
             />
