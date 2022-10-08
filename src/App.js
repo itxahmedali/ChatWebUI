@@ -50,6 +50,23 @@ function App() {
       if (loginId != null) {
         setMessageList(oldValue => [...oldValue, msg]);
       }
+      // console.log(...new Set(messageList));
+      const uniqueIds = [];
+
+      const uniqueEmployees = messageList.filter(element => {
+        const isDuplicate = uniqueIds.includes(element.id);
+
+        if (!isDuplicate) {
+          uniqueIds.push(element.id);
+
+          return true;
+        }
+
+        return false;
+      });
+
+      // 👇️ [{id: 1, name: 'Tom'}, {id: 2, name: 'Nick'}]
+      console.log(msg);
     });
     users?.map((e, i) => {
       if (i == loginId) {
@@ -58,7 +75,9 @@ function App() {
       }
     })
   }, [loginId]);
+  let imcrement = 1;
   function sendMessage() {
+    imcrement++
     let time = new Date().getTime();
     if (messageEdit == false) {
       if (message == '' || message == null) {
@@ -69,6 +88,7 @@ function App() {
           to_id: toId,
           from_id: loginId,
           timestamp: time,
+          mesgId: imcrement
         });
         document.getElementById('messageInput').value = ''
         axios
@@ -152,8 +172,9 @@ function App() {
       });
   }
   const messages = messageList?.map((e, i) => {
+    console.log(e)
     return (
-      (e.to_id == toId &&
+      (e.to_id == (toId) &&
         e.from_id == loginId &&
         e.to_id != loginId) ?
         <div key={i} className='row d-flex justify-content-end'>
@@ -226,7 +247,7 @@ function App() {
           if (res?.from_id == loginId && res?.to_id == loginId) {
             return
           }
-          else{
+          else {
             users.push(res);
           }
         });
