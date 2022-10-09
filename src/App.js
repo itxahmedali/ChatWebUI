@@ -43,6 +43,8 @@ function App() {
   const [deleteId, setdeleteId] = useState([]);
   const [profileName, setprofileName] = useState(null)
   const [userName, setuserName] = useState(null)
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     // console.log(profileName,"hello")
     socket.on('message', message => {
@@ -54,19 +56,19 @@ function App() {
         setMessageList(oldValue => [...oldValue, msg]);
       }
       // console.log(...new Set(messageList));
-      const uniqueIds = [];
+      // const uniqueIds = [];
 
-      const uniqueEmployees = messageList.filter(element => {
-        const isDuplicate = uniqueIds.includes(element.id);
+      // const uniqueEmployees = messageList.filter(element => {
+      //   const isDuplicate = uniqueIds.includes(element.id);
 
-        if (!isDuplicate) {
-          uniqueIds.push(element.id);
+      //   if (!isDuplicate) {
+      //     uniqueIds.push(element.id);
 
-          return true;
-        }
+      //     return true;
+      //   }
 
-        return false;
-      });
+      //   return false;
+      // });
 
       // 👇️ [{id: 1, name: 'Tom'}, {id: 2, name: 'Nick'}]
       // console.log(msg);
@@ -159,6 +161,7 @@ function App() {
     )
   })
   const getChat = e => {
+    setLoading(true)
     setprofileName(e);
     if (e?.hasOwnProperty('from_name') && loginId != null) {
       if (e.from_id == loginId && e.to_id == loginId) {
@@ -190,11 +193,12 @@ function App() {
         },
       )
       .then(res => {
-        console.log(res.data.data.data);
+        setLoading(false)
         setMessageList(res.data.data.data);
         // setLoading(false)
       })
       .catch(e => {
+        setLoading(false)
         console.log(e, 'chatData');
         // setLoading(false)
       });
@@ -246,34 +250,40 @@ function App() {
   }
   const deleteChat = async (e) => {
     console.log(e);
-    (e?.from_id != loginId && e.to_id == loginId) ? 
-    axios.post(`http://monilyapp.yourhealthgrades.com/api/chat/deleteChat?to_id=${e.from_id}&from_id=${e.to_id}`,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Accept: 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    },).then((res) => {
-      console.log(res);
-      getUserList()
-    }).catch((err) => {
-      console.log(err);
-    })
-     :
-    axios.post(`http://monilyapp.yourhealthgrades.com/api/chat/deleteChat?to_id=${e.to_id}&from_id=${e.from_id}`,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Accept: 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    },).then((res) => {
-      console.log(res);
-      getUserList()
-    }).catch((err) => {
-      console.log(err);
-    })
+    (e?.from_id != loginId && e.to_id == loginId) ?
+      axios.post(`http://monilyapp.yourhealthgrades.com/api/chat/deleteChat?to_id=${e.from_id}&from_id=${e.to_id}`,
+        {},
+        {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      ).then((res) => {
+        console.log(res);
+        getUserList()
+        setprofileName(null)
+        console.log(profileName);
+      }).catch((err) => {
+        console.log(err);
+      })
+      :
+      axios.post(`http://monilyapp.yourhealthgrades.com/api/chat/deleteChat?to_id=${e.to_id}&from_id=${e.from_id}`,
+        {},
+        {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      ).then((res) => {
+        console.log(res);
+        getUserList()
+        setprofileName(null)
+        console.log(profileName);
+      }).catch((err) => {
+        console.log(err);
+      })
   }
   const messages = messageList?.map((e, i) => {
     return (
@@ -304,7 +314,7 @@ function App() {
           <div key={i} className='row d-flex'>
             <div className='profile d-flex align-items-center widthFit'>
               <div className='profileImg d-flex justify-content-center align-items-center'>
-                <p>{profileName?.substring(0, 1)}</p>
+                {/* <p>{profileName?.substring(0, 1)}</p> */}
               </div>
             </div>
             <div className='sender'>
@@ -344,7 +354,7 @@ function App() {
   }, [search])
   useEffect(() => {
     getUserList()
-  }, [loginId])
+  }, [loginId, messageList])
   const getUserList = () => {
     axios
       .get(
@@ -427,24 +437,34 @@ function App() {
           {
             profileName != null ?
               <>
-                <div className='header'>
-                  <div className='profile d-flex align-items-center'>
-                    <div className='profileImg d-flex justify-content-center align-items-center'>
-                      <p>{profileName?.hasOwnProperty('to_name') ? profileName?.to_name?.substring(0, 1) : profileName?.label?.substring(0, 1)}</p>
+                {
+                  loading ?
+                    <div className='d-flex justify-content-center align-items-center h-100'>
+                      <div className='loadingBig'>
+                      </div>
                     </div>
-                    <p>{profileName?.hasOwnProperty('to_name') ? profileName?.to_name : profileName?.label}</p>
-                  </div>
-                </div>
-                <div className='body'>
-                  {messages}
-                </div>
-                <div className='footer'>
-                  <div className='position-relative'>
-                    <textarea rows={1} placeholder='Type messge' id='messageInput' onChange={e => setMessage(e.target.value)}></textarea>
-                    <button className='sendButton' onClick={() => sendMessage()}><i className='fa fa-paper-plane'></i>
-                    </button>
-                  </div>
-                </div>
+                    :
+                    <>
+                      <div className='header'>
+                        <div className='profile d-flex align-items-center'>
+                          <div className='profileImg d-flex justify-content-center align-items-center'>
+                            <p>{profileName?.hasOwnProperty('to_name') ? profileName?.to_name?.substring(0, 1) : profileName?.label?.substring(0, 1)}</p>
+                          </div>
+                          <p>{profileName?.hasOwnProperty('to_name') ? profileName?.to_name : profileName?.label}</p>
+                        </div>
+                      </div>
+                      <div className='body'>
+                        {messages}
+                      </div>
+                      <div className='footer'>
+                        <div className='position-relative'>
+                          <textarea rows={1} placeholder='Type messge' id='messageInput' onChange={e => setMessage(e.target.value)}></textarea>
+                          <button className='sendButton' onClick={() => sendMessage()}><i className='fa fa-paper-plane'></i>
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                }
               </>
               : <div className='d-flex justify-content-center align-items-center w-100 h-100'>
                 <p>Hello</p>

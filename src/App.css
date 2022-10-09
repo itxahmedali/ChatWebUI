@@ -177,3 +177,9 @@ button.profile {
     position: absolute;
     right: 15px;
 }
+.loadingBig {
+  background-image: url("./assets/loader.gif");
+  width: 130px;
+  height: 130px;
+  background-size: contain;
+}
