@@ -40,8 +40,11 @@ function App() {
   const [miniLoader, setminiLoader] = useState(false)
   const [messageList, setMessageList] = useState([]);
   const [recentUser, setRecentUsers] = useState([]);
-
+  const [deleteId, setdeleteId] = useState([]);
+  const [profileName, setprofileName] = useState(null)
+  const [userName, setuserName] = useState(null)
   useEffect(() => {
+    // console.log(profileName,"hello")
     socket.on('message', message => {
       const msg = JSON.parse(message);
       // if (msg.from_id == loginId) {
@@ -66,12 +69,12 @@ function App() {
       });
 
       // 👇️ [{id: 1, name: 'Tom'}, {id: 2, name: 'Nick'}]
-      console.log(msg);
+      // console.log(msg);
     });
     users?.map((e, i) => {
       if (i == loginId) {
         setuserName(e.name)
-        console.log(e);
+        // console.log(e);
       }
     })
   }, [loginId]);
@@ -110,47 +113,72 @@ function App() {
           });
       }
     } else {
-      // console.log(deleteId, message);
-      // axios
-      //   .post(
-      //     `https://monilyapp.yourhealthgrades.com/api/chat/updateMessage?id=${deleteId}&message=${message}`,
-      //     {},
-      //     {
-      //       headers: {
-      //         Accept: 'application/json',
-      //         Authorization: `Bearer ${token}`,
-      //       },
-      //     },
-      //   )
-      //   .then(res => {
-      //     getMessages();
-      //     setMessage('');
-      //     setmessageEdit(false);
-      //   })
-      //   .catch(err => {
-      //     console.log(err);
-      //   });
+      console.log(deleteId, message);
+      axios
+        .post(
+          `https://monilyapp.yourhealthgrades.com/api/chat/updateMessage?id=${deleteId}&message=${message}`,
+          {},
+          {
+            headers: {
+              Accept: 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        )
+        .then(res => {
+          getDeleteChat();
+          setMessage('');
+          setmessageEdit(false);
+        })
+        .catch(err => {
+          console.log(err);
+        });
     }
   }
-  const [profileName, setprofileName] = useState(null)
-  const [userName, setuserName] = useState(null)
+
   const UserButton = recentUser?.map((e, i) => {
     return (
-      // loginId != i ?
-      <button key={i} className='btn' onClick={() => { getChat(e) }}>
-        {/* <button key={i} className='btn' onClick={() => { setprofileName(e.name); setToId(i) }}> */}
-        <div className='profile d-flex align-items-center'>
+      <div key={i} className="profile d-flex align-items-center position-relative">
+        <button className='profile d-flex align-items-center' onClick={() => { getChat(e) }}>
           <div className='profileImg d-flex justify-content-center align-items-center'>
             <p>{e.to_name.substring(0, 1)}</p>
           </div>
-          <p>{e?.from_id == loginId ? e?.to_name : e?.from_name}</p>
+          <div className='d-flex align-items-baseline flex-column'>
+            <p>{e?.from_id == loginId ? e?.to_name : e?.from_name}</p>
+            <div className='d-flex align-items-baseline flex-column'>
+              <p className='text-left'>{e?.message}</p>
+              <p className='userTime text-left'>{moment(e?.timestamp).format('hh:mm A')}</p>
+            </div>
+          </div>
+        </button>
+        <i className='fa fa-chevron-down' data-bs-toggle="dropdown" />
+        <div className="dropdown-menu">
+          <button className="dropdown-item" onClick={() => { deleteChat(e); }}>Delete</button>
         </div>
-      </button>
-      // : null
+      </div>
     )
   })
   const getChat = e => {
     setprofileName(e);
+    if (e?.hasOwnProperty('from_name') && loginId != null) {
+      if (e.from_id == loginId && e.to_id == loginId) {
+        return;
+      } else if (
+        e.from_id != loginId &&
+        e.to_id == loginId
+      ) {
+        setToId(e.from_id);
+      } else if (
+        e.to_id != loginId &&
+        e.from_id == loginId
+      ) {
+        setToId(e.to_id);
+      } else {
+        return;
+      }
+    } else {
+      setToId(e?.id);
+    }
     axios
       .get(
         `https://monilyapp.yourhealthgrades.com/api/chat/getChat?to_id=${e?.hasOwnProperty("to_id") ? e?.to_id : e?.id}&from_id=${loginId}`,
@@ -162,7 +190,7 @@ function App() {
         },
       )
       .then(res => {
-        console.log(res);
+        console.log(res.data.data.data);
         setMessageList(res.data.data.data);
         // setLoading(false)
       })
@@ -171,17 +199,97 @@ function App() {
         // setLoading(false)
       });
   }
+  const getDeleteChat = () => {
+    axios
+      .get(
+        `https://monilyapp.yourhealthgrades.com/api/chat/getChat?to_id=${profileName?.hasOwnProperty("to_id") ? profileName?.to_id : profileName?.id}&from_id=${loginId}`,
+        {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+      .then(res => {
+        console.log(res.data.data.data);
+        setMessageList(res.data.data.data);
+        // setLoading(false)
+      })
+      .catch(e => {
+        console.log(e, 'chatData');
+        // setLoading(false)
+      });
+  }
+  const deleteMessage = (e) => {
+    axios
+      .post(
+        `https://monilyapp.yourhealthgrades.com/api/chat/deleteMessage?id=${e}`,
+        {},
+        {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+      .then(res => {
+        console.log(res);
+        getDeleteChat();
+      })
+      .catch(err => {
+        console.log(err);
+      });
+  };
+  const editMessage = (e) => {
+    document.getElementById('messageInput').value = e
+    setmessageEdit(true)
+  }
+  const deleteChat = async (e) => {
+    console.log(e);
+    (e?.from_id != loginId && e.to_id == loginId) ? 
+    axios.post(`http://monilyapp.yourhealthgrades.com/api/chat/deleteChat?to_id=${e.from_id}&from_id=${e.to_id}`,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    },).then((res) => {
+      console.log(res);
+      getUserList()
+    }).catch((err) => {
+      console.log(err);
+    })
+     :
+    axios.post(`http://monilyapp.yourhealthgrades.com/api/chat/deleteChat?to_id=${e.to_id}&from_id=${e.from_id}`,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    },).then((res) => {
+      console.log(res);
+      getUserList()
+    }).catch((err) => {
+      console.log(err);
+    })
+  }
   const messages = messageList?.map((e, i) => {
-    console.log(e)
     return (
       (e.to_id == (toId) &&
         e.from_id == loginId &&
         e.to_id != loginId) ?
         <div key={i} className='row d-flex justify-content-end'>
           <div className='reciever'>
+            <i className='fa fa-chevron-down' data-bs-toggle="dropdown" />
             <p>{e?.message}</p>
             <div className='time'>
               <p>{moment(e?.timestamp).format('hh:mm A')}</p>
+            </div>
+            <div className="dropdown-menu">
+              <button className="dropdown-item" onClick={() => { editMessage(e?.message); setdeleteId(e?.id) }}>Edit</button>
+              <button className="dropdown-item" onClick={() => { deleteMessage(e?.id); setdeleteId(e?.id) }}>Delete</button>
             </div>
           </div>
           <div className='profile d-flex align-items-center widthFit'>
@@ -200,10 +308,15 @@ function App() {
               </div>
             </div>
             <div className='sender'>
+              <i className='fa fa-chevron-down' data-bs-toggle="dropdown" />
               <p>{e.message}</p>
               <div className='time'>
                 <p>{moment(e?.timestamp).format('hh:mm A')}</p>
               </div>
+            </div>
+            <div className="dropdown-menu">
+              <button className="dropdown-item" onClick={() => { editMessage(); setdeleteId(e?.id) }}>Edit</button>
+              <button className="dropdown-item" onClick={() => { deleteMessage(e?.id); setdeleteId(e?.id) }}>Delete</button>
             </div>
           </div>
           : null
@@ -230,6 +343,9 @@ function App() {
     return () => clearTimeout(delayDebounceFn)
   }, [search])
   useEffect(() => {
+    getUserList()
+  }, [loginId])
+  const getUserList = () => {
     axios
       .get(
         `https://monilyapp.yourhealthgrades.com/api/chat/getChatList?user_id=${loginId}`, {
@@ -241,9 +357,9 @@ function App() {
       },
       )
       .then(res => {
-        console.log(res?.data);
         let users = [];
         res?.data?.data.map(res => {
+          console.log(res);
           if (res?.from_id == loginId && res?.to_id == loginId) {
             return
           }
@@ -256,8 +372,7 @@ function App() {
       .catch(err => {
         console.log(err);
       });
-  }, [loginId])
-
+  }
   const searchApi = (e) => {
     axios
       .get(
@@ -280,14 +395,6 @@ function App() {
               email: e.email
             })
             setminiLoader(false)
-            //   setsearchedUser([res?.data?.data]);
-            //   if (res?.data?.data?.length > 0) {
-            //     setdropDownOpen(true);
-            //   } else {
-            //     setdropDownOpen(false);
-            //   }
-            // } else {
-            //   return;
           }
         });
         setSearchUser(arr)
@@ -296,7 +403,6 @@ function App() {
         setminiLoader(false)
         console.log(err);
       });
-    // console.log(e);
   }
   return (
     <div className='container'>
