@@ -6,6 +6,7 @@ import io from 'socket.io-client';
 import axios from 'axios';
 import moment from 'moment/moment';
 import Select from 'react-select';
+import addNotification, { Notifications } from 'react-push-notification';
 function App() {
   const users = [
     {
@@ -44,39 +45,20 @@ function App() {
   const [profileName, setprofileName] = useState(null)
   const [userName, setuserName] = useState(null)
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
-    // console.log(profileName,"hello")
     socket.on('message', message => {
       const msg = JSON.parse(message);
-      // if (msg.from_id == loginId) {
-      // setNotification(msg.message)
-      // }
       if (loginId != null) {
         setMessageList(oldValue => [...oldValue, msg]);
+        successNotification(msg)
       }
-      // console.log(...new Set(messageList));
-      // const uniqueIds = [];
-
-      // const uniqueEmployees = messageList.filter(element => {
-      //   const isDuplicate = uniqueIds.includes(element.id);
-
-      //   if (!isDuplicate) {
-      //     uniqueIds.push(element.id);
-
-      //     return true;
-      //   }
-
-      //   return false;
-      // });
-
-      // 👇️ [{id: 1, name: 'Tom'}, {id: 2, name: 'Nick'}]
-      // console.log(msg);
     });
+    return function cleanup() { socket.off('message') }
+  })
+  useEffect(() => {
     users?.map((e, i) => {
       if (i == loginId) {
         setuserName(e.name)
-        // console.log(e);
       }
     })
   }, [loginId]);
@@ -286,6 +268,7 @@ function App() {
       })
   }
   const messages = messageList?.map((e, i) => {
+    console.log(e,"mesage here");
     return (
       (e.to_id == (toId) &&
         e.from_id == loginId &&
@@ -314,7 +297,7 @@ function App() {
           <div key={i} className='row d-flex'>
             <div className='profile d-flex align-items-center widthFit'>
               <div className='profileImg d-flex justify-content-center align-items-center'>
-                {/* <p>{profileName?.substring(0, 1)}</p> */}
+                <p>{profileName?.from_id == loginId && profileName?.to_id != loginId ? profileName?.to_name?.substring(0, 1) : profileName?.from_name?.substring(0, 1)}</p>
               </div>
             </div>
             <div className='sender'>
@@ -414,8 +397,22 @@ function App() {
         console.log(err);
       });
   }
+  const successNotification = (e) => {
+    if (e.to_id == loginId &&
+      e.from_id == toId &&
+      e.to_id != toId) {
+      addNotification({
+        title: 'Message',
+        message: e.message,
+        theme: 'darkblue',
+        native: true // when using native, your OS will handle theming.
+      });
+    }
+
+  };
   return (
     <div className='container'>
+      <Notifications />
       <div className='row'>
         <div className='col-lg-2'>
           <div className='position-relative'>
@@ -448,9 +445,12 @@ function App() {
                       <div className='header'>
                         <div className='profile d-flex align-items-center'>
                           <div className='profileImg d-flex justify-content-center align-items-center'>
-                            <p>{profileName?.hasOwnProperty('to_name') ? profileName?.to_name?.substring(0, 1) : profileName?.label?.substring(0, 1)}</p>
+                            {
+                              console.log(profileName?.hasOwnProperty('to_name') ? (profileName?.from_id == loginId && profileName?.to_id != loginId ? profileName?.to_name?.substring(0, 1) : profileName?.from_name?.substring(0, 1)) : profileName?.hasOwnProperty('label') ? profileName?.label?.substring(0, 1) : null)
+                            }
+                            <p>{profileName?.hasOwnProperty('to_name') ? (profileName?.from_id == loginId && profileName?.to_id != loginId ? profileName?.to_name?.substring(0, 1) : profileName?.from_name?.substring(0, 1)) : profileName?.hasOwnProperty('label') ? profileName?.label?.substring(0, 1) : null}</p>
                           </div>
-                          <p>{profileName?.hasOwnProperty('to_name') ? profileName?.to_name : profileName?.label}</p>
+                          <p>{profileName?.hasOwnProperty('to_name') ? (profileName?.from_id == loginId && profileName?.to_id != loginId ? profileName?.to_name : profileName?.from_name) : profileName?.hasOwnProperty('label') ? profileName?.label : null}</p>
                         </div>
                       </div>
                       <div className='body'>
